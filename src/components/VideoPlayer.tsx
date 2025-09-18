@@ -36,9 +36,9 @@ export default function VideoPlayer({
   const [error, setError] = useState<string | null>(null)
   const [isBuffering, setIsBuffering] = useState(false)
 
-  // Detect mobile device
+  // Detect mobile device - FIXED TYPO
   const isMobile = typeof window !== 'undefined' && 
-    /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userUser)
+    /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 
   // Hide message after 5 seconds or when video starts playing
   useEffect(() => {
