@@ -21,14 +21,14 @@ export default function VideoPlayer({
   duration,
   senderName = "Someone special",
   message = "sent you a voice message",
-  autoPlay = false, // Changed to false by default
+  autoPlay = false,
   onPlay,
   onPause,
   onEnded
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [isMuted, setIsMuted] = useState(false) // Start unmuted
+  const [isMuted, setIsMuted] = useState(false)
   const [volume, setVolume] = useState(1)
   const [currentTime, setCurrentTime] = useState(0)
   const [isLoaded, setIsLoaded] = useState(false)
@@ -36,7 +36,7 @@ export default function VideoPlayer({
   const [error, setError] = useState<string | null>(null)
   const [isBuffering, setIsBuffering] = useState(false)
 
-  // Detect mobile device - FIXED TYPO
+  // Detect mobile device
   const isMobile = typeof window !== 'undefined' && 
     /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 
@@ -45,7 +45,7 @@ export default function VideoPlayer({
     if (showMessage) {
       const timer = setTimeout(() => {
         setShowMessage(false)
-      }, 5000) // Increased to 5 seconds
+      }, 5000)
       return () => clearTimeout(timer)
     }
   }, [showMessage])
@@ -63,7 +63,6 @@ export default function VideoPlayer({
     const handleLoadedData = () => {
       setIsLoaded(true)
       setIsBuffering(false)
-      // Remove auto-play logic - let user click to play
     }
 
     const handleCanPlay = () => {
@@ -211,7 +210,7 @@ export default function VideoPlayer({
 
   if (error) {
     return (
-      <div className="w-full max-w-2xl mx-auto">
+      <div className="w-full px-4 mx-auto">
         <div className="p-8 text-white shadow-2xl bg-gradient-to-br from-red-500 to-red-600 rounded-2xl">
           <div className="text-center">
             <h3 className="mb-2 text-xl font-bold">Unable to load video</h3>
@@ -230,7 +229,7 @@ export default function VideoPlayer({
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full px-4 mx-auto">
       {/* Welcome Message - Appears first then disappears */}
       {showMessage && (
         <div className="mb-6 text-center animate-fade-in">
@@ -241,10 +240,12 @@ export default function VideoPlayer({
         </div>
       )}
 
-      {/* Video Player Container */}
-      <div className="overflow-hidden bg-black shadow-2xl rounded-2xl">
-        {/* Video Area - Responsive mobile-first */}
-        <div className="relative w-full" style={{ paddingBottom: '56.25%' /* 16:9 */ }}>
+      {/* Video Player Container - Full width on mobile */}
+      <div className="w-full overflow-hidden bg-black shadow-2xl rounded-2xl">
+        {/* Video Area - Larger on mobile, maintains aspect ratio */}
+        <div className="relative w-full" style={{ 
+          paddingBottom: isMobile ? '75%' : '56.25%' // Taller on mobile for better viewing
+        }}>
           <video
             ref={videoRef}
             src={src}
@@ -253,7 +254,7 @@ export default function VideoPlayer({
             playsInline
             webkit-playsinline="true"
             preload="metadata"
-            controls={false} // Hide native controls
+            controls={false}
           />
           
           {/* Loading Overlay */}
@@ -273,56 +274,74 @@ export default function VideoPlayer({
             </div>
           )}
 
-          {/* Play Button Overlay - Always visible when paused */}
+          {/* Play Button Overlay - Always visible when paused, larger on mobile */}
           {isLoaded && !isPlaying && !isBuffering && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-black bg-opacity-40">
               <button
                 onClick={handlePlayPause}
-                className="flex items-center justify-center w-24 h-24 transition-all duration-300 rounded-full shadow-2xl bg-gradient-to-r from-orange-400 to-amber-500 hover:scale-105"
+                className={`${
+                  isMobile ? 'w-32 h-32' : 'w-24 h-24'
+                } bg-gradient-to-r from-orange-400 to-amber-500 rounded-full flex items-center justify-center hover:scale-105 transition-all duration-300 shadow-2xl`}
               >
-                <Play size={40} className="ml-2 text-white" />
+                <Play size={isMobile ? 48 : 40} className="ml-2 text-white" />
               </button>
             </div>
           )}
         </div>
 
-        {/* Controls Area - Outside Video, Mobile Optimized */}
+        {/* Controls Area - Mobile Optimized */}
         <div className="p-4 md:p-6 bg-gradient-to-r from-gray-900 to-gray-800">
-          {/* Title */}
-          <h3 className="mb-4 text-lg font-semibold text-center text-white md:mb-6">{title}</h3>
+          {/* Title - Larger on mobile */}
+          <h3 className={`text-white font-semibold text-center mb-4 md:mb-6 ${
+            isMobile ? 'text-xl' : 'text-lg'
+          }`}>{title}</h3>
           
-          {/* Main Controls Row - Larger for mobile */}
-          <div className="flex items-center justify-center gap-3 mb-4 md:gap-4 md:mb-6">
+          {/* Main Controls Row - Larger buttons for mobile */}
+          <div className="flex items-center justify-center gap-4 mb-4 md:gap-6 md:mb-6">
             <button
               onClick={handlePlayPause}
               disabled={!isLoaded || isBuffering}
-              className="p-3 md:p-4 bg-gradient-to-r from-orange-400 to-amber-500 hover:from-orange-500 hover:to-amber-600 rounded-full transition-all duration-200 disabled:opacity-50 shadow-lg min-w-[48px] min-h-[48px] md:min-w-[56px] md:min-h-[56px]"
+              className={`${
+                isLoaded && !isBuffering 
+                  ? 'bg-gradient-to-r from-orange-400 to-amber-500 hover:from-orange-500 hover:to-amber-600' 
+                  : 'bg-gray-600'
+              } rounded-full transition-all duration-200 shadow-lg ${
+                isMobile ? 'p-4 min-w-[56px] min-h-[56px]' : 'p-3 md:p-4 min-w-[48px] min-h-[48px] md:min-w-[56px] md:min-h-[56px]'
+              }`}
             >
               {isBuffering ? (
                 <div className="w-6 h-6 border-2 border-white rounded-full animate-spin border-t-transparent" />
               ) : isPlaying ? (
-                <Pause size={24} className="text-white" />
+                <Pause size={isMobile ? 28 : 24} className="text-white" />
               ) : (
-                <Play size={24} className="text-white" />
+                <Play size={isMobile ? 28 : 24} className="text-white" />
               )}
             </button>
 
             <button
               onClick={handleStop}
-              className="p-3 text-gray-300 hover:text-white transition-colors min-w-[48px] min-h-[48px]"
+              className={`text-gray-300 hover:text-white transition-colors ${
+                isMobile ? 'p-4 min-w-[56px] min-h-[56px]' : 'p-3 min-w-[48px] min-h-[48px]'
+              }`}
               title="Stop"
             >
-              <Square size={20} fill="currentColor" />
+              <Square size={isMobile ? 24 : 20} fill="currentColor" />
             </button>
 
             <div className="flex items-center gap-2 md:gap-3">
               <button 
                 onClick={toggleMute}
-                className="p-3 text-gray-300 hover:text-white transition-colors min-w-[48px] min-h-[48px]"
+                className={`text-gray-300 hover:text-white transition-colors ${
+                  isMobile ? 'p-4 min-w-[56px] min-h-[56px]' : 'p-3 min-w-[48px] min-h-[48px]'
+                }`}
               >
-                {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                {isMuted ? (
+                  <VolumeX size={isMobile ? 24 : 20} />
+                ) : (
+                  <Volume2 size={isMobile ? 24 : 20} />
+                )}
               </button>
-              {!isMobile && ( // Hide volume slider on mobile to save space
+              {!isMobile && (
                 <input
                   type="range"
                   min="0"
@@ -336,11 +355,15 @@ export default function VideoPlayer({
             </div>
           </div>
 
-          {/* Progress Section */}
-          <div className="mb-4 space-y-2 md:space-y-3">
-            <div className="flex items-center justify-between text-sm text-gray-300">
-              <span className="font-mono text-xs md:text-sm">{formatTime(currentTime)}</span>
-              <span className="font-mono text-xs md:text-sm">{formatTime(duration || 0)}</span>
+          {/* Progress Section - Larger on mobile */}
+          <div className="mb-6 space-y-3">
+            <div className="flex items-center justify-between text-gray-300">
+              <span className={`font-mono ${isMobile ? 'text-sm' : 'text-xs md:text-sm'}`}>
+                {formatTime(currentTime)}
+              </span>
+              <span className={`font-mono ${isMobile ? 'text-sm' : 'text-xs md:text-sm'}`}>
+                {formatTime(duration || 0)}
+              </span>
             </div>
             <div className="relative">
               <input
@@ -349,7 +372,9 @@ export default function VideoPlayer({
                 max={duration || 0}
                 value={currentTime}
                 onChange={handleSeek}
-                className="w-full h-3 bg-gray-700 rounded-full appearance-none cursor-pointer accent-orange-500"
+                className={`w-full bg-gray-700 rounded-full appearance-none cursor-pointer accent-orange-500 ${
+                  isMobile ? 'h-4' : 'h-3'
+                }`}
                 style={{
                   background: `linear-gradient(to right, #f97316 0%, #f97316 ${(currentTime / (duration || 1)) * 100}%, #374151 ${(currentTime / (duration || 1)) * 100}%, #374151 100%)`
                 }}
@@ -357,13 +382,15 @@ export default function VideoPlayer({
             </div>
           </div>
 
-          {/* Action Buttons - Stacked on mobile */}
-          <div className="flex flex-col items-center justify-center gap-3 pt-4 border-t border-gray-700 sm:flex-row sm:gap-4">
+          {/* Action Buttons - Larger and full width on mobile */}
+          <div className="flex flex-col gap-3 pt-4 border-t border-gray-700">
             <button
               onClick={handleDownload}
-              className="inline-flex items-center justify-center w-full gap-2 px-4 py-2 text-white transition-colors bg-gray-700 rounded-lg hover:bg-gray-600 sm:w-auto"
+              className={`inline-flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors justify-center ${
+                isMobile ? 'w-full px-6 py-4 text-lg' : 'px-4 py-2'
+              }`}
             >
-              <Download size={18} />
+              <Download size={isMobile ? 24 : 18} />
               Download
             </button>
             <button
@@ -379,9 +406,11 @@ export default function VideoPlayer({
                   alert('Link copied to clipboard!')
                 }
               }}
-              className="inline-flex items-center justify-center w-full gap-2 px-4 py-2 text-white transition-colors bg-orange-600 rounded-lg hover:bg-orange-700 sm:w-auto"
+              className={`inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors justify-center ${
+                isMobile ? 'w-full px-6 py-4 text-lg' : 'px-4 py-2'
+              }`}
             >
-              <Share2 size={18} />
+              <Share2 size={isMobile ? 24 : 18} />
               Share
             </button>
           </div>
