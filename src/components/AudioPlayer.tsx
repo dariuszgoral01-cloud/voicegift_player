@@ -143,7 +143,7 @@ export default function AudioPlayer({
   if (error) {
     return (
       <div className="p-8 text-center text-red-500">
-        <p className="mb-2 text-lg">⚠️ Audio Error</p>
+        <p className="mb-2 text-lg">Audio Error</p>
         <p className="text-sm">{error}</p>
       </div>
     )
@@ -161,11 +161,11 @@ export default function AudioPlayer({
       {/* Header */}
       <div className="mb-6 text-center">
         <h1 className="mb-2 text-2xl font-bold text-gray-800">
-          🎵 {title}
+          {title}
         </h1>
         <div className="flex items-center justify-center w-16 h-16 mx-auto rounded-full bg-gradient-to-r from-amber-400 to-orange-500">
-          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-white/20">
-            🎵
+          <div className="flex items-center justify-center w-12 h-12 bg-white rounded-full bg-opacity-20">
+            <Volume2 size={20} className="text-white" />
           </div>
         </div>
       </div>
@@ -199,7 +199,7 @@ export default function AudioPlayer({
           max={duration || 100}
           value={currentTime}
           onChange={handleSeek}
-          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
         />
       </div>
 
@@ -227,7 +227,7 @@ export default function AudioPlayer({
             step="0.1"
             value={isMuted ? 0 : volume}
             onChange={handleVolumeChange}
-            className="w-20 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            className="w-20 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
           />
         </div>
       </div>
