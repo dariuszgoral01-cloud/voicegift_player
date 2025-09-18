@@ -27,8 +27,7 @@
   margin: 0;
 }
 
-html,
-body {
+html, body {
   max-width: 100vw;
   overflow-x: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -72,7 +71,7 @@ video::-webkit-media-controls-panel {
   animation: spin 1s linear infinite;
 }
 
-/* Fade in animation */
+/* Fade in animation - Enhanced for VideoPlayer */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -84,7 +83,22 @@ video::-webkit-media-controls-panel {
   }
 }
 
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.animate-fadeIn {
   animation: fadeIn 0.3s ease-out;
 }
 
@@ -106,6 +120,109 @@ video::-webkit-media-controls-panel {
   @apply h-full transition-all duration-100 ease-out bg-gradient-to-r from-amber-400 to-orange-500;
 }
 
+/* Video Player Specific Styles */
+.aspect-video {
+  aspect-ratio: 16 / 9;
+}
+
+/* Custom Range Slider Styling for Video Player */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-track {
+  background: transparent;
+  border-radius: 0.5rem;
+  height: 0.5rem;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 1.25rem;
+  width: 1.25rem;
+  border-radius: 50%;
+  background: #f97316;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  border: 2px solid white;
+  transition: all 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
+input[type="range"]::-moz-range-track {
+  background: transparent;
+  border-radius: 0.5rem;
+  height: 0.5rem;
+  border: none;
+}
+
+input[type="range"]::-moz-range-thumb {
+  height: 1.25rem;
+  width: 1.25rem;
+  border-radius: 50%;
+  background: #f97316;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  transition: all 0.2s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
+/* Focus states for accessibility */
+input[type="range"]:focus::-webkit-slider-thumb {
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
+}
+
+input[type="range"]:focus::-moz-range-thumb {
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
+}
+
+/* Video Player Button Enhancements */
+.video-player-button {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.video-player-button:hover {
+  transform: scale(1.05);
+}
+
+.video-player-button:active {
+  transform: scale(0.95);
+}
+
+/* Large Play Button Animation */
+@keyframes playButtonPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(249, 115, 22, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+  }
+}
+
+.play-button-large {
+  animation: playButtonPulse 2s infinite;
+}
+
 /* Mobile optimizations */
 @media (max-width: 768px) {
   .mobile-player {
@@ -114,6 +231,22 @@ video::-webkit-media-controls-panel {
   
   .mobile-controls {
     @apply flex flex-col space-y-4;
+  }
+  
+  /* Larger touch targets on mobile */
+  input[type="range"]::-webkit-slider-thumb {
+    height: 1.5rem;
+    width: 1.5rem;
+  }
+  
+  input[type="range"]::-moz-range-thumb {
+    height: 1.5rem;
+    width: 1.5rem;
+  }
+  
+  /* Better button spacing on mobile */
+  .video-player-controls-mobile {
+    @apply gap-6;
   }
 }
 
@@ -125,5 +258,78 @@ video::-webkit-media-controls-panel {
   
   .desktop-controls {
     @apply flex flex-row items-center justify-center space-x-6;
+  }
+}
+
+/* High DPI / Retina Display Optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  input[type="range"]::-webkit-slider-thumb {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  
+  input[type="range"]::-moz-range-thumb {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+}
+
+/* Dark mode support for video player */
+@media (prefers-color-scheme: dark) {
+  .video-player-dark {
+    background: linear-gradient(135deg, #1f2937, #111827);
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-fadeIn,
+  .play-button-large,
+  .video-player-button {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Loading spinner for video player */
+@keyframes video-loading-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.video-loading-spinner {
+  animation: video-loading-spin 1s linear infinite;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid #f97316;
+  border-radius: 50%;
+}
+
+/* Progress bar enhancements for video player */
+.video-progress-container {
+  @apply relative w-full h-3 overflow-hidden bg-gray-700 rounded-full cursor-pointer;
+}
+
+.video-progress-bar {
+  @apply h-full transition-all duration-100 ease-out bg-gradient-to-r from-orange-400 to-amber-500;
+}
+
+.video-progress-buffer {
+  @apply absolute top-0 h-full bg-gray-600 opacity-50;
+}
+
+/* Volume slider specific styling */
+.volume-slider {
+  @apply w-20 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer;
+  background: linear-gradient(to right, #f97316 0%, #f97316 var(--volume-percent, 100%), #374151 var(--volume-percent, 100%), #374151 100%);
+}
+
+/* Backdrop blur support */
+@supports (backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px)) {
+  .backdrop-blur-support {
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
   }
 }

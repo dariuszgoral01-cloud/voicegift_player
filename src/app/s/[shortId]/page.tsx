@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
+import VideoPlayer from '../../../components/VideoPlayer'
+import AudioPlayer from '../../../components/AudioPlayer'
 import Header from '../../../components/Header'
-import { AlertCircle, Play, Pause, Volume2, VolumeX, Download, Share2 } from 'lucide-react'
+import { AlertCircle, Loader2 } from 'lucide-react'
 
 interface RecordingData {
   id: string
@@ -16,24 +18,20 @@ interface RecordingData {
   mimeType: string
   isVideo: boolean
   createdAt: string
+  // Optional fields for personalization
+  senderName?: string
+  occasion?: string
+  customMessage?: string
 }
 
 export default function PlayerPage() {
   const params = useParams()
   const shortId = params.shortId as string
-  const audioRef = useRef<HTMLAudioElement>(null)
   
   const [recording, setRecording] = useState<RecordingData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [playCount, setPlayCount] = useState(0)
-
-  // Player states
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [volume, setVolume] = useState(1)
-  const [isMuted, setIsMuted] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
 
   const currentUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}/s/${shortId}` 
@@ -71,302 +69,202 @@ export default function PlayerPage() {
     fetchRecording()
   }, [shortId])
 
-  // Audio event listeners
-  useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
-
-    const handleTimeUpdate = () => setCurrentTime(audio.currentTime)
-    const handleLoadedData = () => {
-      setIsLoading(false)
-      // Auto-play
-      audio.play().then(() => {
-        setIsPlaying(true)
-      }).catch(console.log)
-    }
-    const handleEnded = () => setIsPlaying(false)
-    const handlePlay = () => setIsPlaying(true)
-    const handlePause = () => setIsPlaying(false)
-
-    audio.addEventListener('timeupdate', handleTimeUpdate)
-    audio.addEventListener('loadeddata', handleLoadedData)
-    audio.addEventListener('ended', handleEnded)
-    audio.addEventListener('play', handlePlay)
-    audio.addEventListener('pause', handlePause)
-
-    return () => {
-      audio.removeEventListener('timeupdate', handleTimeUpdate)
-      audio.removeEventListener('loadeddata', handleLoadedData)
-      audio.removeEventListener('ended', handleEnded)
-      audio.removeEventListener('play', handlePlay)
-      audio.removeEventListener('pause', handlePause)
-    }
-  }, [recording])
-
-  // Player control functions
-  const togglePlay = async () => {
-    const audio = audioRef.current
-    if (!audio) return
-
-    try {
-      if (isPlaying) {
-        audio.pause()
-      } else {
-        await audio.play()
-        setPlayCount(prev => prev + 1)
-      }
-    } catch (error) {
-      console.error('Play error:', error)
-    }
+  const handlePlay = () => {
+    setPlayCount(prev => prev + 1)
   }
 
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const audio = audioRef.current
-    if (!audio) return
-
-    const newVolume = parseFloat(e.target.value)
-    setVolume(newVolume)
-    audio.volume = newVolume
+  // Helper function to extract personalized message info
+  const getPersonalizedMessage = (recording: RecordingData) => {
+    // Extract sender info from title or use defaults
+    const senderName = recording.senderName || 
+      (recording.title.includes('from') ? 
+       recording.title.split('from')[1]?.trim() : 
+       "Someone special")
     
-    if (newVolume > 0) {
-      setIsMuted(false)
-    }
+    const occasion = recording.occasion || 
+      (recording.title.toLowerCase().includes('birthday') ? 'birthday message' :
+       recording.title.toLowerCase().includes('christmas') ? 'Christmas message' :
+       recording.title.toLowerCase().includes('anniversary') ? 'anniversary message' :
+       'message')
+    
+    const customMessage = recording.customMessage || `sent you a ${occasion}`
+    
+    return { senderName, message: customMessage }
   }
 
-  const toggleMute = () => {
-    const audio = audioRef.current
-    if (!audio) return
-
-    if (isMuted) {
-      audio.volume = volume
-      setIsMuted(false)
-    } else {
-      audio.volume = 0
-      setIsMuted(true)
-    }
-  }
-
-  const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60)
-    const seconds = Math.floor(time % 60)
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`
-  }
-
-  // Audio Visualizer for audio files
-  const AudioVisualizer = () => (
-    <div className="flex items-center justify-center w-full h-full">
-      <div className="flex items-end space-x-3">
-        {[...Array(15)].map((_, i) => (
-          <div
-            key={i}
-            className={`w-4 bg-gradient-to-t from-amber-500 to-orange-500 rounded-t-lg transition-all duration-200 ${
-              isPlaying ? 'animate-pulse' : ''
-            }`}
-            style={{
-              height: isPlaying 
-                ? `${30 + Math.random() * 80}px` 
-                : '30px',
-              animationDelay: `${i * 0.1}s`
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  )
-
+  // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
         <Header />
-        <div className="relative flex items-center justify-center min-h-screen bg-black">
+        <div className="flex items-center justify-center min-h-screen">
           <div className="text-center text-white">
-            <div className="w-16 h-16 mx-auto mb-4 border-4 rounded-full border-amber-500 border-t-transparent animate-spin"></div>
-            <p className="text-lg font-semibold">Loading your message...</p>
+            <Loader2 size={64} className="mx-auto mb-6 text-orange-500 animate-spin" />
+            <h1 className="mb-2 text-2xl font-bold">Loading your message...</h1>
+            <p className="text-gray-300">Please wait while we prepare your voice gift</p>
           </div>
         </div>
       </div>
     )
   }
 
+  // Error state
   if (error || !recording) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
         <Header />
-        <div className="relative flex items-center justify-center min-h-screen bg-black">
-          <div className="max-w-md p-8 mx-auto text-center text-white">
-            <AlertCircle size={64} className="mx-auto mb-4 text-red-500" />
-            <h1 className="mb-2 text-2xl font-bold">Message Not Found</h1>
-            <p className="mb-6 text-white/80">
-              {error || 'The message you\'re looking for doesn\'t exist or has been removed.'}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 font-semibold text-white transition-all duration-300 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 hover:shadow-xl hover:scale-105"
-            >
-              Try Again
-            </button>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="max-w-md p-8 mx-auto text-center">
+            <div className="mb-6">
+              <AlertCircle size={80} className="mx-auto mb-4 text-red-400" />
+              <h1 className="mb-2 text-3xl font-bold text-white">
+                Message Not Found
+              </h1>
+              <p className="mb-6 text-gray-300">
+                {error || 'The message you\'re looking for doesn\'t exist or has been removed.'}
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full px-6 py-3 text-white transition-all duration-300 rounded-full bg-gradient-to-r from-orange-400 to-amber-500 hover:shadow-2xl hover:scale-105"
+              >
+                Try Again
+              </button>
+              <a
+                href="https://voicegift.uk"
+                className="inline-block w-full px-6 py-3 text-center text-gray-300 transition-all duration-300 bg-gray-700 rounded-full hover:bg-gray-600"
+              >
+                Go to VoiceGift
+              </a>
+            </div>
           </div>
         </div>
       </div>
     )
   }
 
+  // Get personalized message data
+  const { senderName, message } = getPersonalizedMessage(recording)
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       <Header />
       
-      <main>
-        {/* Hero Player Section - Replaces the ocean image */}
-        <div className="relative min-h-screen overflow-hidden bg-black">
-          {/* Audio element */}
-          <audio
-            ref={audioRef}
-            src={recording.fileUrl}
-            preload="metadata"
-            className="hidden"
-          />
-
-          {/* Video or Audio Visualization Background */}
+      {/* Main Player Section */}
+      <main className="flex items-center justify-center min-h-screen px-4 py-8">
+        <div className="w-full max-w-4xl">
+          {/* Player Component - Choose based on media type */}
           {recording.isVideo ? (
-            <video
+            <VideoPlayer
               src={recording.fileUrl}
-              className="absolute inset-0 object-cover w-full h-full"
-              autoPlay
-              loop
-              muted={isMuted}
+              title={recording.title}
+              duration={recording.duration}
+              senderName={senderName}
+              message={message}
+              autoPlay={true}
+              onPlay={handlePlay}
             />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black">
-              <AudioVisualizer />
-            </div>
+            <AudioPlayer
+              src={recording.fileUrl}
+              title={recording.title}
+              duration={recording.duration}
+              autoPlay={true}
+              onPlay={handlePlay}
+            />
           )}
 
-          {/* Dark overlay for better text visibility */}
-          <div className="absolute inset-0 bg-black/30" />
-
-          {/* Content over the player */}
-          <div className="relative z-10 flex items-center justify-center min-h-screen px-4 text-center">
-            <div className="max-w-2xl mx-auto">
-              <h1 className="mb-6 text-4xl font-bold leading-tight text-white sm:text-5xl lg:text-6xl">
-                {recording.title}
-              </h1>
+          {/* Message Details Card */}
+          <div className="mt-8">
+            <div className="max-w-2xl p-8 mx-auto bg-white border border-gray-200 shadow-xl rounded-2xl bg-opacity-95 backdrop-blur-sm">
+              <h3 className="mb-6 text-xl font-bold text-center text-gray-800">Message Details</h3>
               
-              <p className="mb-8 text-lg sm:text-xl text-white/90">
-                {recording.isVideo ? 'Video Message' : 'Voice Message'}
-              </p>
-
-              {/* Player Controls */}
-              <div className="flex items-center justify-center mb-8 space-x-4">
-                <button 
-                  onClick={togglePlay}
-                  disabled={isLoading}
-                  className="p-4 text-white transition-all duration-200 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <div className="w-6 h-6 border-2 border-white rounded-full border-t-transparent animate-spin" />
-                  ) : isPlaying ? (
-                    <Pause size={24} />
-                  ) : (
-                    <Play size={24} />
-                  )}
-                </button>
-                
-                <button 
-                  onClick={toggleMute}
-                  className="p-3 text-white transition-all duration-200 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                >
-                  {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-                </button>
-
-                {/* Volume Slider */}
-                <div className="items-center hidden space-x-2 sm:flex">
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    value={isMuted ? 0 : volume}
-                    onChange={handleVolumeChange}
-                    className="w-20 h-1 rounded-lg appearance-none cursor-pointer bg-white/30"
-                    style={{
-                      background: `linear-gradient(to right, #f59e0b 0%, #f59e0b ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.3) ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.3) 100%)`
-                    }}
-                  />
+              <div className="grid grid-cols-1 gap-6 text-center md:grid-cols-3">
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <p className="mb-2 text-sm font-medium text-gray-600">Type</p>
+                  <div className="flex items-center justify-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${recording.isVideo ? 'bg-red-500' : 'bg-blue-500'}`}></div>
+                    <p className="font-semibold text-gray-900">
+                      {recording.isVideo ? 'Video Message' : 'Voice Message'}
+                    </p>
+                  </div>
                 </div>
                 
-                <a
-                  href={recording.fileUrl}
-                  download={recording.title}
-                  className="p-3 text-white transition-all duration-200 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                >
-                  <Download size={20} />
-                </a>
-                
-                <button
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({ title: recording.title, url: currentUrl })
-                    }
-                  }}
-                  className="p-3 text-white transition-all duration-200 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                >
-                  <Share2 size={20} />
-                </button>
-              </div>
-
-              {/* Time display */}
-              <div className="text-sm text-white/80">
-                {formatTime(currentTime)} / {formatTime(recording.duration)}
-              </div>
-            </div>
-          </div>
-
-          {/* Progress bar at bottom */}
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
-            <div
-              className="h-full transition-all duration-100 bg-gradient-to-r from-amber-400 to-orange-500"
-              style={{ width: `${(currentTime / recording.duration) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Rest of the page content */}
-        <div className="py-16 bg-white sm:py-24">
-          <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-            <div className="mb-12 text-center">
-              <h2 className="mb-4 text-3xl font-bold text-gray-900 sm:text-4xl">
-                Message Details
-              </h2>
-            </div>
-
-            <div className="max-w-md p-8 mx-auto bg-gray-50 rounded-2xl">
-              <div className="space-y-4 text-center">
-                <div>
-                  <p className="mb-1 font-semibold text-gray-600">Type</p>
-                  <p className="font-semibold text-gray-900">
-                    {recording.isVideo ? 'Video Message' : 'Voice Message'}
-                  </p>
-                </div>
-                <div>
-                  <p className="mb-1 font-semibold text-gray-600">Duration</p>
-                  <p className="font-semibold text-gray-900">
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <p className="mb-2 text-sm font-medium text-gray-600">Duration</p>
+                  <p className="text-2xl font-bold text-orange-600">
                     {Math.floor(recording.duration / 60)}:{(recording.duration % 60).toString().padStart(2, '0')}
                   </p>
                 </div>
-                <div>
-                  <p className="mb-1 font-semibold text-gray-600">Created</p>
+                
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <p className="mb-2 text-sm font-medium text-gray-600">Created</p>
                   <p className="font-semibold text-gray-900">
-                    {new Date(recording.createdAt).toLocaleDateString()}
+                    {new Date(recording.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
                   </p>
                 </div>
+              </div>
 
-                {playCount > 0 && (
-                  <div className="pt-4 mt-4 border-t border-gray-200">
-                    <p className="text-xs text-gray-600">
+              {/* File Info */}
+              <div className="pt-6 mt-6 text-center border-t border-gray-200">
+                <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                  <div>
+                    <span className="font-medium">File Size:</span> {(recording.fileSize / 1024 / 1024).toFixed(2)} MB
+                  </div>
+                  <div>
+                    <span className="font-medium">Format:</span> {recording.mimeType.split('/')[1].toUpperCase()}
+                  </div>
+                </div>
+              </div>
+
+              {/* Play Statistics */}
+              {playCount > 0 && (
+                <div className="pt-4 mt-4 text-center border-t border-gray-200">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-100 rounded-full">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                    <p className="text-sm font-medium text-orange-700">
                       Played {playCount} time{playCount !== 1 ? 's' : ''} this session
                     </p>
                   </div>
-                )}
+                </div>
+              )}
+
+              {/* Share Section */}
+              <div className="pt-6 mt-6 text-center border-t border-gray-200">
+                <p className="mb-4 text-sm text-gray-600">Share this message</p>
+                <div className="flex items-center justify-center gap-4">
+                  <button
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({
+                          title: recording.title,
+                          text: `Listen to this message from ${senderName}`,
+                          url: currentUrl
+                        })
+                      } else {
+                        navigator.clipboard.writeText(currentUrl)
+                        // You could add a toast notification here
+                        alert('Link copied to clipboard!')
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 px-6 py-3 text-white transition-all duration-300 rounded-full bg-gradient-to-r from-orange-400 to-amber-500 hover:shadow-xl hover:scale-105"
+                  >
+                    Share Message
+                  </button>
+                  
+                  <button
+                    onClick={() => window.open(recording.fileUrl, '_blank')}
+                    className="inline-flex items-center gap-2 px-6 py-3 text-gray-700 transition-all duration-300 bg-gray-200 rounded-full hover:bg-gray-300"
+                  >
+                    Download
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -374,19 +272,19 @@ export default function PlayerPage() {
       </main>
 
       {/* Footer */}
-      <footer className="text-white bg-gray-900">
-        <div className="px-4 py-12 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div className="mb-8 text-center">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500">
-                <i className="text-lg text-white ri-mic-line"></i>
-              </div>
-              <span className="text-white font-['Pacifico'] text-xl">VoiceGift</span>
+      <footer className="py-8 text-center text-gray-400 border-t border-gray-800">
+        <div className="max-w-4xl px-4 mx-auto">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-r from-orange-400 to-amber-500">
+              <span className="text-xs text-white">🎤</span>
             </div>
-            <p className="text-sm text-gray-400">
-              Powered by VoiceGift • Creating memorable voice messages
-            </p>
+            <span className="font-semibold text-transparent bg-gradient-to-r from-orange-400 to-amber-500 bg-clip-text">
+              VoiceGift
+            </span>
           </div>
+          <p className="text-sm">
+            Creating memorable voice messages • Powered by VoiceGift
+          </p>
         </div>
       </footer>
     </div>
