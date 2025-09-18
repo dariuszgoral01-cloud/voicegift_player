@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useState } from 'react'
-import { Play, Pause, Volume2, VolumeX } from 'lucide-react'
+import { Play, Pause, Volume2, VolumeX, RotateCcw } from 'lucide-react'
 
 interface VideoPlayerProps {
   src: string
@@ -28,6 +28,7 @@ export default function VideoPlayer({
   const [volume, setVolume] = useState(1)
   const [currentTime, setCurrentTime] = useState(0)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const video = videoRef.current
@@ -59,11 +60,20 @@ export default function VideoPlayer({
       setCurrentTime(video.currentTime)
     }
 
+    const handleError = () => {
+      setError('Failed to load video file')
+      setIsLoaded(false)
+    }
+
+    // Set initial volume
+    video.volume = volume
+
     video.addEventListener('loadeddata', handleLoadedData)
     video.addEventListener('play', handlePlay)
     video.addEventListener('pause', handlePause)
     video.addEventListener('ended', handleEnded)
     video.addEventListener('timeupdate', handleTimeUpdate)
+    video.addEventListener('error', handleError)
 
     return () => {
       video.removeEventListener('loadeddata', handleLoadedData)
@@ -71,16 +81,21 @@ export default function VideoPlayer({
       video.removeEventListener('pause', handlePause)
       video.removeEventListener('ended', handleEnded)
       video.removeEventListener('timeupdate', handleTimeUpdate)
+      video.removeEventListener('error', handleError)
     }
-  }, [autoPlay, onPlay, onPause, onEnded])
+  }, [autoPlay, onPlay, onPause, onEnded, volume])
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (!videoRef.current) return
 
-    if (isPlaying) {
-      videoRef.current.pause()
-    } else {
-      videoRef.current.play()
+    try {
+      if (isPlaying) {
+        videoRef.current.pause()
+      } else {
+        await videoRef.current.play()
+      }
+    } catch (error) {
+      setError('Failed to play video')
     }
   }
 
@@ -97,6 +112,9 @@ export default function VideoPlayer({
     if (videoRef.current) {
       videoRef.current.volume = newVolume
     }
+    if (newVolume > 0) {
+      setIsMuted(false)
+    }
   }
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,43 +125,86 @@ export default function VideoPlayer({
     }
   }
 
+  const restart = () => {
+    const video = videoRef.current
+    if (!video) return
+
+    video.currentTime = 0
+    setCurrentTime(0)
+  }
+
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60)
     const seconds = Math.floor(time % 60)
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
   }
 
+  if (error) {
+    return (
+      <div className="p-8 text-center text-red-500">
+        <p className="mb-2 text-lg">Video Error</p>
+        <p className="text-sm">{error}</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="w-full overflow-hidden bg-black rounded-lg">
+    <div className="w-full max-w-4xl mx-auto overflow-hidden bg-black rounded-lg shadow-lg">
       <div className="relative">
         <video
           ref={videoRef}
           src={src}
           className="w-full h-auto"
           muted={isMuted}
-          volume={volume}
         />
         
         {!isLoaded && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-            <div className="text-white">Loading video...</div>
+            <div className="text-center text-white">
+              <div className="w-8 h-8 mx-auto mb-2 border-2 border-white rounded-full animate-spin border-t-transparent" />
+              <div>Loading video...</div>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay Play Button for better UX */}
+        {isLoaded && !isPlaying && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+            <button
+              onClick={togglePlay}
+              className="flex items-center justify-center w-20 h-20 text-white transition-all bg-black bg-opacity-50 rounded-full hover:bg-opacity-70"
+            >
+              <Play size={32} className="ml-1" />
+            </button>
           </div>
         )}
       </div>
 
       <div className="p-4 text-white bg-gray-900">
-        <h3 className="mb-2 text-lg font-semibold">{title}</h3>
+        <h3 className="mb-4 text-lg font-semibold text-center">{title}</h3>
         
-        <div className="flex items-center mb-4 space-x-4">
+        <div className="flex items-center justify-center mb-4 space-x-4">
           <button
             onClick={togglePlay}
-            className="p-2 bg-orange-500 rounded-full hover:bg-orange-600"
+            disabled={!isLoaded}
+            className="p-3 transition-colors bg-orange-500 rounded-full hover:bg-orange-600 disabled:opacity-50"
           >
             {isPlaying ? <Pause size={20} /> : <Play size={20} />}
           </button>
 
+          <button
+            onClick={restart}
+            className="p-3 text-gray-300 transition-colors hover:text-white"
+            title="Restart"
+          >
+            <RotateCcw size={20} />
+          </button>
+
           <div className="flex items-center space-x-2">
-            <button onClick={toggleMute}>
+            <button 
+              onClick={toggleMute}
+              className="text-gray-300 transition-colors hover:text-white"
+            >
               {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
             </button>
             <input
@@ -151,24 +212,27 @@ export default function VideoPlayer({
               min="0"
               max="1"
               step="0.1"
-              value={volume}
+              value={isMuted ? 0 : volume}
               onChange={handleVolumeChange}
-              className="w-20"
+              className="w-20 accent-orange-500"
             />
           </div>
+        </div>
 
-          <div className="flex items-center flex-1 space-x-2">
-            <span className="text-sm">{formatTime(currentTime)}</span>
-            <input
-              type="range"
-              min="0"
-              max={duration || 0}
-              value={currentTime}
-              onChange={handleSeek}
-              className="flex-1"
-            />
-            <span className="text-sm">{formatTime(duration || 0)}</span>
+        {/* Progress Bar */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm text-gray-300">
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(duration || 0)}</span>
           </div>
+          <input
+            type="range"
+            min="0"
+            max={duration || 0}
+            value={currentTime}
+            onChange={handleSeek}
+            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
+          />
         </div>
       </div>
     </div>
