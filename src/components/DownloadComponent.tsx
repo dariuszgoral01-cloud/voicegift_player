@@ -72,4 +72,8 @@ const handleDownload = async () => {
     setIsDownloading(false)
     setDownloadProgress(0)
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> ea37d04489e53afc50cd2e70472fbebeaf1e83c1
